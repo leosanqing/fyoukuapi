@@ -103,3 +103,33 @@ func (c *VideoController) ChannelTypeRecommendList() {
 		c.ServeJSON()
 	}
 }
+
+// 获取视频列表
+// @router /channel/video [*]
+func (c *VideoController) ChannelVideo() {
+	channelId, _ := c.GetInt("channelId")
+	regionId, _ := c.GetInt("regionId")
+	typeId, _ := c.GetInt("typeId")
+	end := c.GetString("end")
+	sort := c.GetString("sort")
+	limit, _ := c.GetInt("limit")
+	offset, _ := c.GetInt("offset")
+
+	if 0 == channelId {
+		c.Data["json"] = ReturnError(4001, "必须指定频道")
+		c.ServeJSON()
+	}
+
+	if 0 == limit {
+		limit = 12
+	}
+	list, params, err := models.GetChannelVideoList(channelId, regionId, typeId, end, sort, offset, limit)
+
+	if err != nil {
+		c.Data["json"] = ReturnError(4001, "没有相关内容")
+		c.ServeJSON()
+	} else {
+		c.Data["json"] = ReturnSuccess(0, "Success", params, list)
+		c.ServeJSON()
+	}
+}
