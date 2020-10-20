@@ -22,6 +22,18 @@ type Video struct {
 	Comment            int
 }
 
+type VideoEpisodes struct {
+	Id            int
+	Title         string
+	AddTime       int64
+	Num           int
+	VideoId       int
+	PlayUrl       string
+	Status        int
+	Comment       int
+	AliyunVideoId int
+}
+
 func init() {
 	orm.RegisterModel(new(Video))
 }
@@ -109,4 +121,26 @@ func GetChannelVideoList(
 	_, err := qs.Values(&videos, "id", "title", "sub_title", "img", "img1", "add_time", "episodes_count", "is_end")
 
 	return values, videos, err
+}
+
+func GetVideoInfo(videoId int) (Video, error) {
+	o := orm.NewOrm()
+	var video Video
+	err := o.QueryTable("video").
+		Filter("id", videoId).
+		One(&video)
+	return video, err
+}
+
+func GetVideoEpisodesList(videoId int) (int64, []VideoEpisodes, error) {
+	o := orm.NewOrm()
+	var episodes []VideoEpisodes
+	rows, err := o.Raw("SELECT id,title,add_time,num,play_url,comment\n"+
+		"FROM video_episodes\n"+
+		"WHERE video_id = ?\n"+
+		"AND status = 1\n"+
+		"ORDER BY num ASC", videoId).
+		QueryRows(&episodes)
+
+	return rows, episodes, err
 }

@@ -133,3 +133,39 @@ func (c *VideoController) ChannelVideo() {
 		c.ServeJSON()
 	}
 }
+
+// @router /video/info [get]
+func (c *VideoController) VideoInfo() {
+	videoId, _ := c.GetInt("videoId")
+
+	if 0 == videoId {
+		c.Data["json"] = ReturnError(4004, "必须指定视频Id")
+		c.ServeJSON()
+	}
+	info, err := models.GetVideoInfo(videoId)
+	if err != nil {
+		c.Data["json"] = ReturnError(4001, "没有相关内容")
+		c.ServeJSON()
+	} else {
+		c.Data["json"] = ReturnSuccess(0, "Success", info, 1)
+		c.ServeJSON()
+	}
+}
+
+// @router /video/episodes/list [*]
+func (c *VideoController) VideoEpisodesList() {
+	videoId, _ := c.GetInt("videoId")
+
+	if 0 == videoId {
+		c.Data["json"] = ReturnError(4004, "必须指定视频Id")
+		c.ServeJSON()
+	}
+	count, info, err := models.GetVideoEpisodesList(videoId)
+	if err != nil {
+		c.Data["json"] = ReturnError(4001, "没有相关内容")
+		c.ServeJSON()
+	} else {
+		c.Data["json"] = ReturnSuccess(0, "Success", info, count)
+		c.ServeJSON()
+	}
+}
