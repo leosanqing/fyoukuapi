@@ -15,8 +15,15 @@ type User struct {
 	Avatar   string
 }
 
+type UserInfo struct {
+	Id      int    `json:"id"`
+	Name    string `json:"name"`
+	AddTime int64  `json:"addTime"`
+	Avatar  string `json:"avatar"`
+}
+
 func init() {
-	orm.RegisterModel(new(User))
+	orm.RegisterModel(new(User), new(UserInfo))
 }
 
 // 根据手机号判断用户是否存在
@@ -54,4 +61,15 @@ func UserLogin(mobile string, password string) (int, string) {
 		return 0, ""
 	}
 	return user.Id, user.Name
+}
+
+func GetUserInfo(uid int) (UserInfo, error) {
+	o := orm.NewOrm()
+	var userInfo UserInfo
+
+	err := o.Raw("SELECT id, name, add_time, avatar\n"+
+		"FROM user\n"+
+		"WHERE id = ? \n"+
+		"LIMIT 1", uid).QueryRow(&userInfo)
+	return userInfo, err
 }
