@@ -144,3 +144,28 @@ func GetVideoEpisodesList(videoId int) (int64, []VideoEpisodes, error) {
 
 	return rows, episodes, err
 }
+
+func GetChannelTop(channelId int) (int64, []Video, error) {
+	o := orm.NewOrm()
+	var video []Video
+	rows, err := o.QueryTable("video").
+		Filter("channelId", channelId).
+		Filter("status", 1).
+		OrderBy("-comment").
+		Limit(10).
+		All(&video)
+
+	return rows, video, err
+}
+
+func GetTypeTop(typeId int) (int64, []Video, error) {
+	o := orm.NewOrm()
+	var video []Video
+	rows, err := o.QueryTable("video").
+		Filter("typeId", typeId).
+		Filter("status", 1).
+		OrderBy("-comment").
+		Limit(10).
+		All(&video)
+	return rows, video, err
+}
