@@ -4,6 +4,8 @@ import (
 	"fyoukuapi/models"
 	"github.com/astaxie/beego"
 	"regexp"
+	"strconv"
+	"strings"
 )
 
 type UserController struct {
@@ -75,6 +77,36 @@ func (c *UserController) LoginDo() {
 			map[string]interface{}{"uid": id, "username": name}, 1)
 	} else {
 		c.Data["json"] = ReturnError(4004, "手机号或密码不正确")
+	}
+	c.ServeJSON()
+}
+
+// 发送消息
+// @router /send/message [post]
+func (c *UserController) SendMessage() {
+	uids := c.GetString("uids")
+	content := c.GetString("content")
+	if uids == "" {
+		c.Data["json"] = ReturnError(4001, "uid 不能为空")
+		c.ServeJSON()
+	}
+
+	if content == "" {
+		c.Data["json"] = ReturnError(4002, "发送内容 不能为空")
+		c.ServeJSON()
+	}
+
+	messageId, err := models.SendMessage(content)
+
+	if err == nil {
+		uid := strings.Split(uids, ",")
+		for _, s := range uid {
+			userId, _ := strconv.Atoi(s)
+			models.SendMessageUser(userId, messageId)
+		}
+		c.Data["json"] = ReturnSuccess(0, "发送成功", nil, 1)
+	} else {
+		c.Data["json"] = ReturnError(4004, "发送消息失败")
 	}
 	c.ServeJSON()
 }
