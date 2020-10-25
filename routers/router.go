@@ -13,4 +13,5 @@ func init() {
 	beego.Include(&controllers.BasicController{})
 	beego.Include(&controllers.CommentController{})
 	beego.Include(&controllers.TopController{})
+	beego.Include(&controllers.BarrageController{})
 }
