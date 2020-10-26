@@ -169,3 +169,52 @@ func (c *VideoController) VideoEpisodesList() {
 		c.ServeJSON()
 	}
 }
+
+//我的视频接口
+// Route::get('user/video', 'VideoController/userVideo')
+// @router /user/video [get]
+func (c *VideoController) GetUserVideo() {
+	uid, _ := c.GetInt("uid")
+	if 0 == uid {
+		c.Data["json"] = ReturnError(4004, "必须指定用户Id")
+		c.ServeJSON()
+	}
+	counts, videos, err := models.GetUserVideo(uid)
+
+	if err != nil {
+		c.Data["json"] = ReturnError(4001, "没有相关内容")
+		c.ServeJSON()
+	} else {
+		c.Data["json"] = ReturnSuccess(0, "Success", videos, counts)
+		c.ServeJSON()
+	}
+}
+
+// 保存用户上传视频信息
+// @router /video/save [post]
+func (c *VideoController) VideoSave() {
+	playUrl := c.GetString("playUrl")
+	title := c.GetString("title")
+	subTitle := c.GetString("subTitle")
+	channelId, _ := c.GetInt("channelId")
+	typeId, _ := c.GetInt("typeId")
+	regionId, _ := c.GetInt("regionId")
+	uid, _ := c.GetInt("uid")
+
+	if 0 == uid {
+		c.Data["json"] = ReturnError(4004, "必须指定用户Id")
+		c.ServeJSON()
+	}
+	if "" == playUrl {
+		c.Data["json"] = ReturnError(4004, "必须指定播放地址")
+		c.ServeJSON()
+	}
+	err := models.SaveVideo(title, subTitle, channelId, regionId, typeId, playUrl, uid)
+	if err != nil {
+		c.Data["json"] = ReturnError(4001, "没有相关内容")
+		c.ServeJSON()
+	} else {
+		c.Data["json"] = ReturnSuccess(0, "Success", nil, 1)
+		c.ServeJSON()
+	}
+}
