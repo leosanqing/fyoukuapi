@@ -1,6 +1,9 @@
 package models
 
-import "github.com/astaxie/beego/orm"
+import (
+	"github.com/astaxie/beego/orm"
+	"time"
+)
 
 type Video struct {
 	Id                 int
@@ -20,6 +23,17 @@ type Video struct {
 	IsEnd              int
 	IsRecommend        int
 	Comment            int
+}
+
+type VideoData struct {
+	Id            int    `json:"id"`
+	Title         string `json:"title"`
+	SubTitle      string `json:"subTitle"`
+	Img           string `json:"img"`
+	Img1          string `json:"img1"`
+	AddTime       int64  `json:"addTime"`
+	IsEnd         int    `json:"isEnd"`
+	EpisodesCount int    `json:"episodesCount"`
 }
 
 type VideoEpisodes struct {
@@ -168,4 +182,43 @@ func GetTypeTop(typeId int) (int64, []Video, error) {
 		Limit(10).
 		All(&video)
 	return rows, video, err
+}
+
+func GetUserVideo(uid int) (int64, []Video, error) {
+	o := orm.NewOrm()
+	var videos []Video
+	rowsCount, err := o.Raw(
+		"SELECT id,title,sub_title,img,img1,add_time,episodes_count,is_end\n"+
+			"FROM video\n"+
+			"WHERE user_id = ? \n"+
+			"ORDER BY add_time DESC", uid).
+		QueryRows(&videos)
+	return rowsCount, videos, err
+}
+
+func SaveVideo(title string, subTitle string, channelId int, regionId int, typeId int, playUrl string, userId int) error {
+	o := orm.NewOrm()
+	id, err := o.Insert(&Video{
+		Title:              title,
+		SubTitle:           subTitle,
+		AddTime:            time.Now().Unix(),
+		Img:                "",
+		Img1:               "",
+		EpisodesCount:      1,
+		IsEnd:              1,
+		ChannelId:          channelId,
+		Status:             1,
+		RegionId:           regionId,
+		TypeId:             typeId,
+		EpisodesUpdateTime: time.Now().Unix(),
+		Comment:            0,
+		UserId:             userId,
+	})
+	if err == nil {
+		o.Raw("INSERT INTO video_episodes \n"+
+			"(title,add_time,num,video_id,play_url,status,comment)\n"+
+			"VALUES (?,?,?,?,?,?,?)",
+			subTitle, time.Now().Unix(), 1, id, playUrl, 1, 0).Exec()
+	}
+	return err
 }

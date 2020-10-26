@@ -1,6 +1,9 @@
 package models
 
-import "github.com/astaxie/beego/orm"
+import (
+	"github.com/astaxie/beego/orm"
+	"time"
+)
 
 type Barrage struct {
 	Id          int
@@ -33,4 +36,18 @@ func GetBarrageList(episodesId int, startTime int, endTime int) (int64, []Barrag
 		QueryRows(&barrageDatas)
 
 	return rows, barrageDatas, err
+}
+
+func Save(content string, currentTime int64, uid int, episodesId int, videoId int) error {
+	o := orm.NewOrm()
+	_, err := o.Insert(&Barrage{
+		CurrentTime: currentTime,
+		Content:     content,
+		UserId:      uid,
+		EpisodesId:  episodesId,
+		VideoId:     videoId,
+		AddTime:     time.Now().Unix(),
+		Status:      1,
+	})
+	return err
 }
