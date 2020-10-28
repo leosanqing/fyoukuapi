@@ -1,4 +1,4 @@
-package redisClient
+package redisconn
 
 import (
 	"github.com/astaxie/beego"

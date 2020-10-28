@@ -2,7 +2,7 @@ package models
 
 import (
 	"encoding/json"
-	redisClient "fyoukuapi/service/redis"
+	"fyoukuapi/service/redis"
 	"github.com/astaxie/beego/orm"
 	"github.com/garyburd/redigo/redis"
 	"strconv"
@@ -154,15 +154,15 @@ func GetVideoInfo(videoId int) (Video, error) {
 // 使用 Redis 缓存 ，改造获取视频详情
 func RedisGetVideoInfo(videoId int) (Video, error) {
 	var video Video
-	conn := redisClient.PoolConnect()
+	conn := redisconn.PoolConnect()
 	defer conn.Close()
 
 	// 定义 RedisKey
 	redisKey := "video:id:" + strconv.Itoa(videoId)
 
-	exists, err := redis.Bool(conn.Do(redisClient.Exists, redisKey))
+	exists, err := redis.Bool(conn.Do(redisconn.Exists, redisKey))
 	if exists {
-		values, _ := redis.Values(conn.Do(redisClient.HGetAll, redisKey))
+		values, _ := redis.Values(conn.Do(redisconn.HGetAll, redisKey))
 		err = redis.ScanStruct(values, &video)
 	} else {
 		o := orm.NewOrm()
@@ -172,11 +172,11 @@ func RedisGetVideoInfo(videoId int) (Video, error) {
 		if err == nil {
 			// 保存数据到redis
 			_, err := conn.Do(
-				redisClient.HmSet,
+				redisconn.HmSet,
 				redis.Args{redisKey}.AddFlat(video)...,
 			)
 			if err == nil {
-				conn.Do(redisClient.Expire, redisKey, 86400)
+				conn.Do(redisconn.Expire, redisKey, 86400)
 			}
 		}
 	}
@@ -203,16 +203,16 @@ func RedisGetVideoEpisodesList(videoId int) (int64, []VideoEpisodes, error) {
 		num      int64
 		err      error
 	)
-	conn := redisClient.PoolConnect()
+	conn := redisconn.PoolConnect()
 	defer conn.Close()
 
 	redisKey := "video:episodes:videoId" + strconv.Itoa(videoId)
 
-	exists, err := redis.Bool(conn.Do(redisClient.Exists, redisKey))
+	exists, err := redis.Bool(conn.Do(redisconn.Exists, redisKey))
 	if exists {
-		num, err = redis.Int64(conn.Do(redisClient.LLen, redisKey))
+		num, err = redis.Int64(conn.Do(redisconn.LLen, redisKey))
 		if err == nil {
-			values, _ := redis.Values(conn.Do(redisClient.LRange, redisKey, "0", "-1"))
+			values, _ := redis.Values(conn.Do(redisconn.LRange, redisKey, "0", "-1"))
 			var episodesInfo VideoEpisodes
 			for _, v := range values {
 				err = json.Unmarshal(v.([]byte), &episodesInfo)
@@ -228,10 +228,10 @@ func RedisGetVideoEpisodesList(videoId int) (int64, []VideoEpisodes, error) {
 			for _, episode := range episodes {
 				marshal, err := json.Marshal(episode)
 				if err == nil {
-					conn.Do(redisClient.RPush, redisKey, marshal)
+					conn.Do(redisconn.RPush, redisKey, marshal)
 				}
 			}
-			conn.Do(redisClient.Expire, redisKey, time.Hour*24)
+			conn.Do(redisconn.Expire, redisKey, time.Hour*24)
 		}
 	}
 
@@ -258,15 +258,15 @@ func RedisGetChannelTop(channelId int) (int64, []Video, error) {
 		err    error
 	)
 
-	conn := redisClient.PoolConnect()
+	conn := redisconn.PoolConnect()
 	defer conn.Close()
 
 	redisKey := "video:top:channel:channelId:" + strconv.Itoa(channelId)
 
-	exists, err := redis.Bool(conn.Do(redisClient.Exists, redisKey))
+	exists, err := redis.Bool(conn.Do(redisconn.Exists, redisKey))
 	if exists {
 		num = 0
-		res, _ := redis.Values(conn.Do(redisClient.ZRevRange, redisKey, 0, 10, redisClient.WithScores))
+		res, _ := redis.Values(conn.Do(redisconn.ZRevRange, redisKey, 0, 10, redisconn.WithScores))
 		for k, v := range res {
 			// 获取到id
 			if k%2 == 0 {
@@ -297,9 +297,9 @@ func RedisGetChannelTop(channelId int) (int64, []Video, error) {
 		if err == nil {
 			// 保存数据到redis
 			for _, v := range videos {
-				conn.Do(redisClient.ZAdd, redisKey, v.Comment, v.Id)
+				conn.Do(redisconn.ZAdd, redisKey, v.Comment, v.Id)
 			}
-			conn.Do(redisClient.Expire, redisKey, 30*time.Second)
+			conn.Do(redisconn.Expire, redisKey, 30*time.Second)
 		}
 	}
 	return num, videos, err
@@ -324,15 +324,15 @@ func RedisGetTypeTop(typeId int) (int64, []Video, error) {
 		err    error
 	)
 
-	conn := redisClient.PoolConnect()
+	conn := redisconn.PoolConnect()
 	defer conn.Close()
 
 	redisKey := "video:top:type:typeId:" + strconv.Itoa(typeId)
 
-	exists, err := redis.Bool(conn.Do(redisClient.Exists, redisKey))
+	exists, err := redis.Bool(conn.Do(redisconn.Exists, redisKey))
 	if exists {
 		num = 0
-		res, _ := redis.Values(conn.Do(redisClient.ZRevRange, redisKey, 0, 10, redisClient.WithScores))
+		res, _ := redis.Values(conn.Do(redisconn.ZRevRange, redisKey, 0, 10, redisconn.WithScores))
 		for k, v := range res {
 			// 获取到id
 			if k%2 == 0 {
@@ -363,9 +363,9 @@ func RedisGetTypeTop(typeId int) (int64, []Video, error) {
 		if err == nil {
 			// 保存数据到redis
 			for _, v := range videos {
-				conn.Do(redisClient.ZAdd, redisKey, v.Comment, v.Id)
+				conn.Do(redisconn.ZAdd, redisKey, v.Comment, v.Id)
 			}
-			conn.Do(redisClient.Expire, redisKey, 30*time.Second)
+			conn.Do(redisconn.Expire, redisKey, 30*time.Second)
 		}
 	}
 	return num, videos, err
