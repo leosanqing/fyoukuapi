@@ -18,7 +18,7 @@ func (c *TopController) ChannelTop() {
 		c.ServeJSON()
 	}
 
-	count, videos, err := models.GetChannelTop(channelId)
+	count, videos, err := models.RedisGetChannelTop(channelId)
 
 	if err != nil {
 		c.Data["json"] = ReturnError(4001, "没有相关内容")
@@ -38,7 +38,7 @@ func (c *TopController) TypeTop() {
 		c.ServeJSON()
 	}
 
-	count, videos, err := models.GetTypeTop(typeId)
+	count, videos, err := models.RedisGetTypeTop(typeId)
 
 	if err != nil {
 		c.Data["json"] = ReturnError(4001, "没有相关内容")

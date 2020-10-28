@@ -51,7 +51,7 @@ func (c *CommentController) CommentList() {
 			commentInfo.UserId = comment.UserId
 			commentInfo.Stamp = comment.Stamp
 			commentInfo.PraiseCount = comment.PraiseCount
-			commentInfo.UserInfo, err = models.GetUserInfo(comment.UserId)
+			commentInfo.UserInfo, err = models.RedisGetUserInfo(comment.UserId)
 			commentInfos = append(commentInfos, commentInfo)
 		}
 

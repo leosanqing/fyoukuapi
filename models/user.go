@@ -1,7 +1,10 @@
 package models
 
 import (
+	redisClient "fyoukuapi/service/redis"
 	"github.com/astaxie/beego/orm"
+	"github.com/garyburd/redigo/redis"
+	"strconv"
 	"time"
 )
 
@@ -70,6 +73,34 @@ func GetUserInfo(uid int) (UserInfo, error) {
 	err := o.Raw("SELECT id, name, add_time, avatar\n"+
 		"FROM user\n"+
 		"WHERE id = ? \n"+
-		"LIMIT 1", uid).QueryRow(&userInfo)
+		"LIMIT 1", uid).
+		QueryRow(&userInfo)
+	return userInfo, err
+}
+
+func RedisGetUserInfo(uid int) (UserInfo, error) {
+	var userInfo UserInfo
+	conn := redisClient.PoolConnect()
+	defer conn.Close()
+
+	redisKey := "user:id:" + strconv.Itoa(uid)
+
+	exists, err := redis.Bool(conn.Do(redisClient.Exists, redisKey))
+	if exists {
+		values, _ := redis.Values(conn.Do(redisClient.HGetAll, redisKey))
+		err = redis.ScanStruct(values, &userInfo)
+	} else {
+		userInfo, err = GetUserInfo(uid)
+		if err == nil {
+			// 保存数据到redis
+			_, err := conn.Do(
+				redisClient.HmSet,
+				redis.Args{redisKey}.AddFlat(userInfo)...,
+			)
+			if err == nil {
+				conn.Do(redisClient.Expire, redisKey, 86400)
+			}
+		}
+	}
 	return userInfo, err
 }
