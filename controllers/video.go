@@ -142,7 +142,7 @@ func (c *VideoController) VideoInfo() {
 		c.Data["json"] = ReturnError(4004, "必须指定视频Id")
 		c.ServeJSON()
 	}
-	info, err := models.GetVideoInfo(videoId)
+	info, err := models.RedisGetVideoInfo(videoId)
 	if err != nil {
 		c.Data["json"] = ReturnError(4001, "没有相关内容")
 		c.ServeJSON()
@@ -160,7 +160,7 @@ func (c *VideoController) VideoEpisodesList() {
 		c.Data["json"] = ReturnError(4004, "必须指定视频Id")
 		c.ServeJSON()
 	}
-	count, info, err := models.GetVideoEpisodesList(videoId)
+	count, info, err := models.RedisGetVideoEpisodesList(videoId)
 	if err != nil {
 		c.Data["json"] = ReturnError(4001, "没有相关内容")
 		c.ServeJSON()
