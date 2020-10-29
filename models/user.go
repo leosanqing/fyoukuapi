@@ -1,7 +1,7 @@
 package models
 
 import (
-	redisClient "fyoukuapi/service/redis"
+	"fyoukuapi/service/redis"
 	"github.com/astaxie/beego/orm"
 	"github.com/garyburd/redigo/redis"
 	"strconv"
@@ -80,25 +80,25 @@ func GetUserInfo(uid int) (UserInfo, error) {
 
 func RedisGetUserInfo(uid int) (UserInfo, error) {
 	var userInfo UserInfo
-	conn := redisClient.PoolConnect()
+	conn := redisconn.PoolConnect()
 	defer conn.Close()
 
 	redisKey := "user:id:" + strconv.Itoa(uid)
 
-	exists, err := redis.Bool(conn.Do(redisClient.Exists, redisKey))
+	exists, err := redis.Bool(conn.Do(redisconn.Exists, redisKey))
 	if exists {
-		values, _ := redis.Values(conn.Do(redisClient.HGetAll, redisKey))
+		values, _ := redis.Values(conn.Do(redisconn.HGetAll, redisKey))
 		err = redis.ScanStruct(values, &userInfo)
 	} else {
 		userInfo, err = GetUserInfo(uid)
 		if err == nil {
 			// 保存数据到redis
 			_, err := conn.Do(
-				redisClient.HmSet,
+				redisconn.HmSet,
 				redis.Args{redisKey}.AddFlat(userInfo)...,
 			)
 			if err == nil {
-				conn.Do(redisClient.Expire, redisKey, 86400)
+				conn.Do(redisconn.Expire, redisKey, 86400)
 			}
 		}
 	}

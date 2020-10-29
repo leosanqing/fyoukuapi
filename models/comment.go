@@ -1,6 +1,8 @@
 package models
 
 import (
+	"encoding/json"
+	mqconn "fyoukuapi/service/mq"
 	"github.com/astaxie/beego/orm"
 	"time"
 )
@@ -58,6 +60,15 @@ func SaveComment(content string, uid int, episodesId int, videoId int) error {
 		o.Raw("UPDATE video SET comment = comment+1 WHERE id = ?", videoId).Exec()
 		// 修改 视频剧情的评论数
 		o.Raw("UPDATE video_episodes SET comment = comment+1 WHERE id=?", episodesId).Exec()
+
+		// 更新redis 排行榜 - 通过mq实现
+		// 创建一个简单模式的 mq
+		videoObj := map[string]int{
+			"videoId": videoId,
+		}
+		videoJson, _ := json.Marshal(videoObj)
+		mqconn.Publish("", "fyouku_top", string(videoJson))
+
 	}
 	return err
 }
