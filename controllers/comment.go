@@ -43,6 +43,46 @@ func (c *CommentController) CommentList() {
 	} else {
 		var commentInfo CommentInfo
 		var commentInfos []CommentInfo
+
+		// 获取 uid channel
+		uidChan := make(chan int, 12)
+		closeChan := make(chan bool, 5)
+		resChan := make(chan models.UserInfo, 12)
+
+		go func() {
+			for _, comment := range comments {
+				uidChan <- comment.UserId
+			}
+			close(uidChan)
+		}()
+
+		// 处理 uidChannel 中的信息
+		for i := 0; i < 5; i++ {
+			go func(uidChan chan int, resChan chan models.UserInfo, closeChan chan bool) {
+				for uid := range uidChan {
+					info, err := models.RedisGetUserInfo(uid)
+					if err == nil {
+						resChan <- info
+					}
+				}
+				closeChan <- true
+			}(uidChan, resChan, closeChan)
+		}
+
+		// 信息聚合
+		go func() {
+			for i := 0; i < 5; i++ {
+				<-closeChan
+			}
+			close(resChan)
+			close(closeChan)
+		}()
+
+		userInfoMap := make(map[int]models.UserInfo)
+		for userInfo := range resChan {
+			userInfoMap[userInfo.Id] = userInfo
+		}
+
 		for _, comment := range comments {
 			commentInfo.Id = comment.Id
 			commentInfo.Content = comment.Content
@@ -51,7 +91,7 @@ func (c *CommentController) CommentList() {
 			commentInfo.UserId = comment.UserId
 			commentInfo.Stamp = comment.Stamp
 			commentInfo.PraiseCount = comment.PraiseCount
-			commentInfo.UserInfo, err = models.RedisGetUserInfo(comment.UserId)
+			commentInfo.UserInfo, _ = userInfoMap[comment.UserId]
 			commentInfos = append(commentInfos, commentInfo)
 		}
 
